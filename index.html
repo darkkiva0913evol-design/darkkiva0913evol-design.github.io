@@ -1,356 +1,52 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="th">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kazuya — 3D Portfolio</title>
-  <meta name="description" content="Interactive 3D portfolio built with Three.js" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epona AR</title>
+<style>body { margin: 0; overflow: hidden; }</style>
 
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --bg: #07080d;
-      --text: #f4f5f7;
-      --muted: #9da3b4;
-      --line: rgba(255,255,255,.10);
-      --accent: #7c5cff;
-      --accent2: #00d4ff;
-    }
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: Inter, "Noto Sans Thai", system-ui, sans-serif;
-      overflow-x: hidden;
-    }
-    canvas {
-      position: fixed;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 0;
-      pointer-events: none;
-    }
-    .noise {
-      position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .035;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.8'/%3E%3C/svg%3E");
-    }
-    header {
-      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 22px 5vw; backdrop-filter: blur(14px);
-      border-bottom: 1px solid rgba(255,255,255,.05);
-    }
-    .logo { font-weight: 800; letter-spacing: .12em; }
-    nav { display: flex; gap: 24px; }
-    nav a { color: var(--muted); text-decoration: none; font-size: 14px; transition: .25s; }
-    nav a:hover { color: #fff; }
-    main { position: relative; z-index: 2; }
-    section {
-      min-height: 100vh;
-      padding: 120px 8vw 80px;
-      display: flex; align-items: center;
-    }
-    .hero { min-height: 100vh; }
-    .hero-content { max-width: 760px; }
-    .eyebrow {
-      display: inline-flex; gap: 8px; align-items: center;
-      padding: 8px 13px; border: 1px solid var(--line);
-      border-radius: 999px; color: #cbd0df; font-size: 12px;
-      background: rgba(255,255,255,.04);
-      margin-bottom: 24px;
-    }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #5cff9d; box-shadow: 0 0 15px #5cff9d; }
-    h1 { font-size: clamp(52px, 9vw, 120px); line-height: .9; letter-spacing: -.065em; }
-    .gradient { background: linear-gradient(100deg,#fff 15%,#a98cff 52%,#00d4ff 90%); -webkit-background-clip:text; color:transparent; }
-    .hero p { color: var(--muted); font-size: clamp(16px, 2vw, 20px); line-height: 1.7; max-width: 600px; margin: 28px 0; }
-    .buttons { display:flex; gap:12px; flex-wrap:wrap; }
-    .btn {
-      display:inline-flex; align-items:center; justify-content:center;
-      padding:13px 20px; border-radius:12px; text-decoration:none;
-      color:#fff; border:1px solid var(--line); background:rgba(255,255,255,.06);
-      transition:.25s;
-    }
-    .btn.primary { background:linear-gradient(135deg,var(--accent),#4e8cff); border:0; }
-    .btn:hover { transform:translateY(-3px); }
-    .section-inner { width:100%; }
-    .section-title { font-size:clamp(35px,5vw,64px); margin-bottom:12px; letter-spacing:-.04em; }
-    .section-sub { color:var(--muted); max-width:650px; line-height:1.7; margin-bottom:35px; }
-    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
-    .card {
-      min-height:260px; padding:25px; border:1px solid var(--line);
-      background:linear-gradient(145deg,rgba(255,255,255,.07),rgba(255,255,255,.025));
-      border-radius:22px; backdrop-filter:blur(12px);
-      transition:.3s; overflow:hidden; position:relative;
-    }
-    .card:hover { transform:translateY(-8px); border-color:rgba(124,92,255,.5); }
-    .card .number { color:#777f94; font-size:12px; }
-    .card h3 { margin:55px 0 10px; font-size:25px; }
-    .card p { color:var(--muted); line-height:1.65; font-size:14px; }
-    .tag { display:inline-block; margin-top:18px; padding:6px 9px; border-radius:7px; background:rgba(124,92,255,.12); color:#b8aaff; font-size:11px; }
-    .about { display:grid; grid-template-columns:1fr 1fr; gap:60px; }
-    .stats { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-    .stat { padding:25px; border:1px solid var(--line); border-radius:18px; background:rgba(255,255,255,.035); }
-    .stat strong { display:block; font-size:35px; margin-bottom:6px; }
-    .stat span { color:var(--muted); font-size:13px; }
-    .contact-box {
-      width:100%; padding:55px; text-align:center; border-radius:28px;
-      border:1px solid var(--line); background:radial-gradient(circle at 50% 0%,rgba(124,92,255,.2),transparent 50%),rgba(255,255,255,.035);
-    }
-    .contact-box p { color:var(--muted); margin:15px auto 25px; max-width:550px; line-height:1.7; }
-    footer { position:relative; z-index:2; padding:30px 8vw; color:#686f80; border-top:1px solid var(--line); font-size:12px; text-align:center; }
-    .scroll { position:absolute; bottom:30px; left:8vw; color:#73798b; font-size:11px; letter-spacing:.2em; }
-    @media(max-width:800px){
-      nav { display:none; }
-      .grid,.about { grid-template-columns:1fr; }
-      section { padding-left:6vw; padding-right:6vw; }
-      .contact-box { padding:35px 20px; }
-      .scroll { left:6vw; }
-    }
-  </style>
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.6.0/dist/aframe-master.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.8/aframe/build/aframe-ar.js"></script>
+<script>
+// ย่อ/วางโมเดลให้พอดี marker แล้วเล่นอนิเมชันแรก (แก้ 1.8 = ความกว้างโมเดล)
+AFRAME.registerComponent('fit', {
+  init() {
+    this.el.addEventListener('model-loaded', e => {
+      const model = e.detail.model, THREE = AFRAME.THREE;
+      const box = new THREE.Box3().setFromObject(model);
+      const size = box.getSize(new THREE.Vector3());
+      const center = box.getCenter(new THREE.Vector3());
+      model.position.set(-center.x, -box.min.y, -center.z);
+      this.el.object3D.scale.setScalar(1.8 / Math.max(size.x, size.y, size.z));
+      if (model.animations.length) {
+        this.mixer = new THREE.AnimationMixer(model);
+        this.mixer.clipAction(model.animations[0]).play();
+      }
+    });
+  },
+  tick(time, dt) { if (this.mixer) this.mixer.update(dt / 1000); }
+});
+</script>
 </head>
 
 <body>
-  <div class="noise"></div>
+<a-scene embedded vr-mode-ui="enabled: false" loading-screen="enabled: false"
+  arjs="sourceType: webcam; debugUIEnabled: false; cameraParametersUrl: https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.8/data/data/camera_para.dat;">
 
-  <header>
-    <div class="logo">KAZUYA / 3D</div>
-    <nav>
-      <a href="#home">Home</a>
-      <a href="#works">Works</a>
-      <a href="#about">About</a>
-      <a href="#contact">Contact</a>
-    </nav>
-  </header>
+  <a-marker preset="hiro" smooth="true">
+    <a-entity gltf-model="https://darkkiva0913evol-design.github.io/P.glb" fit></a-entity>
+  </a-marker>
 
-  <main>
-    <section id="home" class="hero">
-      <div class="hero-content">
-        <div class="eyebrow"><span class="dot"></span> 3D GAME & ANIMATION PORTFOLIO</div>
-        <h1>CREATE<br><span class="gradient">WORLDS.</span></h1>
-        <p>
-          สวัสดีครับ ผมเป็นนักออกแบบเกมและ 3D Creator
-          สนใจการสร้างโลกจำลอง ตัวละคร Environment และประสบการณ์
-          Interactive ที่ผสมผสานศิลปะกับเทคโนโลยี
-        </p>
-        <div class="buttons">
-          <a class="btn primary" href="#works">ดูผลงาน</a>
-          <a class="btn" href="#contact">ติดต่อผม</a>
-        </div>
-      </div>
-      <div class="scroll">SCROLL TO EXPLORE ↓</div>
-    </section>
+  <a-entity camera></a-entity>
+</a-scene>
 
-    <section id="works">
-      <div class="section-inner">
-        <h2 class="section-title">Selected <span class="gradient">Works.</span></h2>
-        <p class="section-sub">ตัวอย่างผลงานที่สามารถเปลี่ยนเป็นโปรเจกต์จริงของคุณได้ เช่น เกม 3D, Environment, Character และ Animation</p>
-
-        <div class="grid">
-          <article class="card">
-            <span class="number">01 / GAME</span>
-            <h3>Help Ra!</h3>
-            <p>3D Adventure + Puzzle Game ในธีมอียิปต์โบราณ เน้นการสำรวจ การแก้ปริศนา และการตัดสินใจภายใต้ข้อจำกัด</p>
-            <span class="tag">Unity · 3D · Adventure</span>
-          </article>
-
-          <article class="card">
-            <span class="number">02 / ENVIRONMENT</span>
-            <h3>Ancient Temple</h3>
-            <p>ออกแบบ Environment ของวิหารโบราณ พร้อมแสง เงา และองค์ประกอบฉากเพื่อสร้างบรรยากาศลึกลับ</p>
-            <span class="tag">Environment · Lighting</span>
-          </article>
-
-          <article class="card">
-            <span class="number">03 / CHARACTER</span>
-            <h3>Game Characters</h3>
-            <p>ออกแบบตัวละคร ผู้เล่น และ Boss พร้อมแนวคิด Animation สำหรับใช้ในเกม 3D</p>
-            <span class="tag">Character · Animation</span>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="about">
-      <div class="section-inner about">
-        <div>
-          <h2 class="section-title">About <span class="gradient">Me.</span></h2>
-          <p class="section-sub">
-            Portfolio นี้สร้างด้วย HTML, CSS และ Three.js โดยใช้ 3D scene
-            เป็นองค์ประกอบหลักด้านภาพ สามารถต่อยอดเป็นเว็บไซต์ Portfolio
-            สำหรับนักศึกษา Game & Animation หรือใช้พรีเซนต์โปรเจกต์จบได้
-          </p>
-          <div class="buttons">
-            <a class="btn primary" href="#contact">Let's work together</a>
-          </div>
-        </div>
-
-        <div class="stats">
-          <div class="stat"><strong>3D</strong><span>Game & Environment</span></div>
-          <div class="stat"><strong>Unity</strong><span>Game Development</span></div>
-          <div class="stat"><strong>Web</strong><span>Interactive Portfolio</span></div>
-          <div class="stat"><strong>∞</strong><span>Creative Experiments</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="contact">
-      <div class="contact-box">
-        <h2 class="section-title">Let's build something <span class="gradient">great.</span></h2>
-        <p>หากต้องการร่วมงานหรือดูรายละเอียดผลงานเพิ่มเติม สามารถติดต่อผ่านช่องทางด้านล่าง</p>
-        <div class="buttons" style="justify-content:center">
-          <a class="btn primary" href="mailto:your@email.com">your@email.com</a>
-          <a class="btn" href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>© 2026 Kazuya — 3D Game & Animation Portfolio</footer>
-
-  <!-- Three.js ผ่าน CDN -->
-  <script type="importmap">
-  {
-    "imports": {
-      "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
-      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
-    }
-  }
-  </script>
-
-  <script type="module">
-    import * as THREE from "three";
-    import { OrbitControls } from "three/addons/controls/OrbitControls.js";
-
-    const scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x07080d, 0.045);
-
-    const camera = new THREE.PerspectiveCamera(
-      55, window.innerWidth / window.innerHeight, 0.1, 100
-    );
-    camera.position.set(0, 0.4, 8);
-
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.outputColorSpace = THREE.SRGBColorSpace;
-    document.body.prepend(renderer.domElement);
-
-    // แสง
-    scene.add(new THREE.AmbientLight(0x8d94ff, 1.4));
-
-    const keyLight = new THREE.PointLight(0x7c5cff, 35, 18);
-    keyLight.position.set(3, 3, 4);
-    scene.add(keyLight);
-
-    const rimLight = new THREE.PointLight(0x00d4ff, 25, 15);
-    rimLight.position.set(-4, 1, 2);
-    scene.add(rimLight);
-
-    // วัตถุหลัก 3D
-    const group = new THREE.Group();
-    scene.add(group);
-
-    const core = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(1.25, 2),
-      new THREE.MeshStandardMaterial({
-        color: 0x7c5cff,
-        metalness: 0.65,
-        roughness: 0.22,
-        emissive: 0x25135c,
-        emissiveIntensity: 0.55
-      })
-    );
-    group.add(core);
-
-    // วงแหวนรอบแกนกลาง
-    for (let i = 0; i < 3; i++) {
-      const ring = new THREE.Mesh(
-        new THREE.TorusGeometry(1.75 + i * 0.38, 0.012, 12, 160),
-        new THREE.MeshBasicMaterial({
-          color: i === 1 ? 0x00d4ff : 0x9c86ff,
-          transparent: true,
-          opacity: 0.75
-        })
-      );
-      ring.rotation.x = Math.PI / 2 + i * 0.35;
-      ring.rotation.z = i * 0.7;
-      group.add(ring);
-    }
-
-    // ดาว/Particle
-    const starCount = 900;
-    const positions = new Float32Array(starCount * 3);
-
-    for (let i = 0; i < starCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 35;
-      positions[i * 3 + 1] = (Math.random() - 0.5) * 22;
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 30;
-    }
-
-    const starGeometry = new THREE.BufferGeometry();
-    starGeometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-
-    const stars = new THREE.Points(
-      starGeometry,
-      new THREE.PointsMaterial({
-        color: 0xbfc7ff,
-        size: 0.025,
-        transparent: true,
-        opacity: 0.8
-      })
-    );
-    scene.add(stars);
-
-    // Mouse interaction
-    let mouseX = 0, mouseY = 0;
-    window.addEventListener("pointermove", (e) => {
-      mouseX = (e.clientX / window.innerWidth - 0.5);
-      mouseY = (e.clientY / window.innerHeight - 0.5);
-    });
-
-    // ใช้ scroll เปลี่ยนตำแหน่ง 3D object
-    let scrollY = 0;
-    window.addEventListener("scroll", () => {
-      scrollY = window.scrollY / window.innerHeight;
-    });
-
-    // Controls สำหรับลากหมุน 3D
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableZoom = false;
-    controls.enablePan = false;
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.autoRotate = true;
-    controls.autoRotateSpeed = 0.45;
-
-    function animate() {
-      requestAnimationFrame(animate);
-
-      const t = performance.now() * 0.001;
-
-      core.rotation.x += 0.002;
-      core.rotation.y += 0.004;
-
-      group.position.x += ((mouseX * 1.1) - group.position.x) * 0.025;
-      group.position.y += ((-mouseY * 0.7) - group.position.y) * 0.025;
-
-      group.rotation.z = scrollY * 0.7;
-      group.position.z = Math.sin(t * 0.8) * 0.15;
-
-      stars.rotation.y = t * 0.008;
-
-      controls.update();
-      renderer.render(scene, camera);
-    }
-
-    animate();
-
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-  </script>
+<p style="position:fixed; bottom:8px; left:10px; margin:0; padding:4px 8px; border-radius:6px;
+   background:#000a; color:#fff; font:12px system-ui, Tahoma, sans-serif;">
+  <a href="https://raw.githubusercontent.com/AR-js-org/AR.js/master/data/images/HIRO.jpg" target="_blank" style="color:#9ef">marker</a>
+  · Epona by
+  <a href="https://sketchfab.com/3d-models/epona-1f1da2940b0d4ddcb4beae1680c47918" target="_blank" style="color:#9ef">Vasian-Digital3D</a>
+  · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" style="color:#9ef">CC BY 4.0</a>
+</p>
 </body>
 </html>
