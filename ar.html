@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/aframe@1.6.0/dist/aframe-master.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.8/aframe/build/aframe-ar.js"></script>
 <script>
-// ย่อ/วางโมเดลให้พอดี marker แล้วเล่นอนิเมชันแรก
+// ย่อ/วางโมเดลให้พอดี marker แล้วเล่นอนิเมชันแรก (แก้ 1.8 = ความกว้างโมเดล)
 AFRAME.registerComponent('fit', {
   init() {
     this.el.addEventListener('model-loaded', e => {
