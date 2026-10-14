@@ -1,37 +1,62 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js"></script>
+  <title>MindAR Blendshape</title>
+  <script type="importmap">
+    { "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-face-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-three.prod.js"
+    } }
+  </script>
   <style>
-    html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; }
-    a-scene { width: 100%; height: 100%; }
+    body { margin: 0; }
+    #container { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
   </style>
 </head>
 <body>
-  <a-scene mindar-face="faceOccluder: false" embedded vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-    <a-entity id="face" mindar-face-default-face-occluder></a-entity>
-    <a-camera active="false" position="0 0 0"></a-camera>
-  </a-scene>
+  <div id="container"></div>
+  <script type="module">
+    import * as THREE from 'three';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+    import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+    import { MindARThree } from 'mindar-face-three';
 
-  <script>
-    document.querySelector('a-scene').addEventListener('arReady', () => {
-      const THREE = AFRAME.THREE;
-      // เปลี่ยน URL นี้เป็นภาพ texture ของคุณ
-      const texture = new THREE.TextureLoader().load('https://darkkiva0913evol-design.github.io/aec.png');
-      //const texture = new THREE.TextureLoader().load('https://sibsansuk.github.io/courses/3dmodel/canonical_face_model_uv_visualization-2.png');
-      texture.colorSpace = THREE.SRGBColorSpace;
-
-      // ใช้ face mesh ของ MindAR แล้วเปลี่ยนจากวัสดุบังหน้าเป็น texture
-      const mesh = document.querySelector('#face').getObject3D('mesh');
-      mesh.material.dispose();
-      mesh.material = new THREE.MeshBasicMaterial({
-        map: texture, transparent: true, opacity: 0.85, side: THREE.DoubleSide
-      });
-      mesh.frustumCulled = false;
+    const mindar = new MindARThree({ container: document.querySelector('#container') });
+    const { renderer, scene, camera } = mindar;
+    // สร้าง environment texture แบบห้องสตูดิโอ เพื่อเพิ่มแสงและเงาสะท้อนให้โมเดล
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    const roomEnvironment = new RoomEnvironment();
+    const environmentTarget = pmremGenerator.fromScene(roomEnvironment);
+    scene.environment = environmentTarget.texture;
+    roomEnvironment.dispose();
+    pmremGenerator.dispose();
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1));
+    const model = await new GLTFLoader().loadAsync('https://storage.googleapis.com/mediapipe-tasks/face_landmarker/raccoon_head.glb');
+    
+    model.scene.scale.setScalar(2);
+    mindar.addAnchor(1).group.add(model.scene);
+    const meshes = [];
+    model.scene.traverse(object => {
+      if (object.isMesh && object.morphTargetDictionary && object.morphTargetInfluences) meshes.push(object);
     });
+
+    await mindar.start();
+    function animate() {
+      const categories = mindar.getLatestEstimate()?.blendshapes?.categories;
+      // จับคู่ชื่อ blendshape กับ morph target ของโมเดล เช่น jawOpen, eyeBlinkLeft
+      for (const mesh of meshes) {
+        for (const { categoryName, score } of categories ?? []) {
+          const index = mesh.morphTargetDictionary[categoryName];
+          if (index !== undefined) mesh.morphTargetInfluences[index] = score;
+        }
+      }
+      renderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
   </script>
 </body>
 </html>
